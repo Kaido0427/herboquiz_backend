@@ -159,6 +159,14 @@ class ScoringController extends Controller
         return response()->json(['statut' => $manche->statut]);
     }
 
+    /** Une manche close par erreur ne doit pas etre un cul-de-sac. */
+    public function rouvrir(Manche $manche)
+    {
+        $manche->update(['statut' => 'en_cours']);
+
+        return response()->json(['statut' => $manche->statut]);
+    }
+
     private function dernierPoint(Manche $manche, bool $brut = false)
     {
         // Depart sur created_at seul : deux points attribues dans la meme

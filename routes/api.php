@@ -48,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('manches/{manche}/point', [ScoringController::class, 'attribuer']);
     Route::post('manches/{manche}/annuler', [ScoringController::class, 'annuler']);
     Route::post('manches/{manche}/terminer', [ScoringController::class, 'terminer']);
+    Route::post('manches/{manche}/rouvrir', [ScoringController::class, 'rouvrir']);
     Route::get('manches', [MancheController::class, 'index']);
     Route::get('manches/{manche}', [MancheController::class, 'show']);
     // Preparer les questions fait partie du travail de l'animateur : c'est lui
