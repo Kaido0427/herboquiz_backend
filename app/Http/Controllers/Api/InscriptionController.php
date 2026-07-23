@@ -37,10 +37,7 @@ class InscriptionController extends Controller
         $cible = Participant::normaliser(trim(($data['prenom'] ?? '') . ' ' . $data['nom']));
 
         foreach (Participant::all() as $p) {
-            $complet = Participant::normaliser($p->prenom . ' ' . $p->nom);
-            $seulNom = Participant::normaliser($p->nom);
-
-            if ($cible === $complet || $cible === $seulNom) {
+            if ($this->correspond($cible, $p)) {
                 return response()->json([
                     'existe'   => true,
                     'id'       => $p->id,
@@ -58,6 +55,47 @@ class InscriptionController extends Controller
         }
 
         return response()->json(['existe' => false]);
+    }
+
+    /**
+     * Rapprochement tolerant.
+     *
+     * Les fiches posees par un administrateur sont souvent incompletes : un
+     * seul mot, « Darius », alors que l'interesse s'inscrit en « Darius
+     * Noukpo ». Une comparaison stricte les considerait comme deux personnes
+     * differentes et creait un doublon — exactement ce qu'on veut eviter.
+     *
+     * On accepte donc qu'un nom soit contenu dans l'autre, a condition que le
+     * mot commun fasse au moins trois lettres : « Ali » ne doit pas se
+     * confondre avec « Alice », mais « Darius » doit retrouver « Darius
+     * Noukpo ».
+     */
+    private function correspond(string $cible, Participant $p): bool
+    {
+        $complet = Participant::normaliser(trim($p->prenom . ' ' . $p->nom));
+        $seulNom = Participant::normaliser($p->nom);
+
+        if ($cible === $complet || $cible === $seulNom) {
+            return true;
+        }
+
+        foreach ([$complet, $seulNom] as $existant) {
+            if ($existant === '' || mb_strlen($existant) < 3) {
+                continue;
+            }
+
+            // Un nom entier contenu dans l'autre, sur une frontiere de mot.
+            $motsCible = explode(' ', $cible);
+            $motsExistant = explode(' ', $existant);
+            $communs = array_intersect($motsCible, $motsExistant);
+            $communs = array_filter($communs, fn ($m) => mb_strlen($m) >= 3);
+
+            if (count($communs) >= min(count($motsCible), count($motsExistant))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function inscrire(Request $request)
@@ -81,12 +119,10 @@ class InscriptionController extends Controller
         // administrateur, par l'e-mail ou le numero si la personne revient.
         $existant = Participant::where('email', $data['email'])->first()
             ?? Participant::all()->first(fn ($p) => $p->telephone && preg_replace('/\D+/', '', $p->telephone) === $tel)
-            ?? Participant::all()->first(function ($p) use ($data) {
-                $cible = Participant::normaliser(trim(($data['prenom'] ?? '') . ' ' . $data['nom']));
-
-                return $cible === Participant::normaliser($p->prenom . ' ' . $p->nom)
-                    || $cible === Participant::normaliser($p->nom);
-            });
+            ?? Participant::all()->first(fn ($p) => $this->correspond(
+                Participant::normaliser(trim(($data['prenom'] ?? '') . ' ' . $data['nom'])),
+                $p,
+            ));
 
         if ($existant) {
             // Deja inscrit PAR LUI-MEME : c'est un doublon, on refuse.
