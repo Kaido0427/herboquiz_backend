@@ -51,6 +51,9 @@ class PerformanceController extends Controller
                 'nom_affiche'  => $participant->nom_affiche,
                 'nom_complet'  => $participant->nom_complet,
                 'confirme'     => $participant->confirme,
+                'telephone'     => $participant->telephone,
+                'email'         => $participant->email,
+                'lien_facebook' => $participant->lien_facebook,
                 'auto_inscrit' => $participant->auto_inscrit,
             ],
             'equipes' => $participant->equipes->map(fn ($e) => [
