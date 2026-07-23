@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ReglagesSeeder::class,
             AccesSeeder::class,
+            MembresSeeder::class,
         ]);
     }
 }

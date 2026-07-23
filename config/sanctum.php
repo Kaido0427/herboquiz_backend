@@ -50,7 +50,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Duree d'une session, en minutes. Genereuse a dessein : etre deconnecte
+    // au milieu d'une manche, avec le groupe qui attend, serait le pire moment.
+    'expiration' => (int) env('SESSION_MINUTES', 720),
 
     /*
     |--------------------------------------------------------------------------

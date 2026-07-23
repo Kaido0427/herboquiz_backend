@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Acces;
+use App\Models\Membre;
 use App\Models\SessionAcces;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,32 @@ use Illuminate\Http\Request;
  */
 class AuthController extends Controller
 {
+    /**
+     * Premiere etape : on valide le code seul, et on renvoie les noms deja
+     * connus pour ce role. L'interesse choisit alors son nom au lieu de le
+     * retaper — ecrire « Ekson » un soir et « Eckson » le lendemain rendrait la
+     * tracabilite des points inexploitable.
+     *
+     * Les noms ne sortent qu'a quelqu'un qui possede deja le code.
+     */
+    public function verifier(Request $request)
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:64']]);
+        $code = strtoupper(trim($data['code']));
+
+        foreach (Acces::all() as $acces) {
+            if ($acces->verifierCode($code)) {
+                return response()->json([
+                    'role' => $acces->role,
+                    'noms' => Membre::where('role', $acces->role)
+                        ->orderBy('ordre')->orderBy('nom')->pluck('nom'),
+                ]);
+            }
+        }
+
+        return response()->json(['message' => 'Code invalide.'], 401);
+    }
+
     public function connexion(Request $request)
     {
         $data = $request->validate([
@@ -35,6 +62,10 @@ class AuthController extends Controller
                 'nom'               => trim($data['nom']),
                 'derniere_activite' => now(),
             ]);
+
+            // Un nom saisi librement rejoint la liste : la prochaine connexion
+            // le proposera, et l'orthographe restera stable.
+            Membre::firstOrCreate(['nom' => $session->nom, 'role' => $acces->role]);
 
             return response()->json([
                 'jeton' => $session->createToken('herboquiz', [$acces->role])->plainTextToken,

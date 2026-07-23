@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccesController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EquipeController;
 use App\Http\Controllers\Api\MancheController;
+use App\Http\Controllers\Api\MembreController;
 use App\Http\Controllers\Api\ParticipantController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\QuestionController;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Route;
 // ---------------------------------------------------------------------------
 Route::get('public', [PublicController::class, 'index']);
 
+Route::post('connexion/verifier', [AuthController::class, 'verifier'])
+    ->middleware('throttle:10,1');
 Route::post('connexion', [AuthController::class, 'connexion'])
     ->middleware('throttle:10,1');   // un code court se devine par force brute
 
@@ -59,6 +62,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('simulation', [SimulationController::class, 'simuler']);
         Route::post('simulation/appliquer', [SimulationController::class, 'appliquer']);
+
+        Route::apiResource('membres', MembreController::class)->except(['show']);
 
         Route::get('acces', [AccesController::class, 'index']);
         Route::get('acces/sessions', [AccesController::class, 'sessions']);
