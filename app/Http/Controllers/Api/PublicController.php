@@ -36,7 +36,47 @@ class PublicController extends Controller
                 ->orderBy('nom')->get()
                 ->map(fn ($p) => ['nom_affiche' => $p->nom_affiche]),
             'nb_inscrits' => Participant::where('confirme', true)->count(),
+            'meilleur_marqueur' => $this->meilleurMarqueur(),
         ]);
+    }
+
+    /**
+     * Meilleur marqueur, calcule sur les POULES uniquement.
+     *
+     * On peut beaucoup marquer sans aller au bout : le tableau final
+     * recompense celui qui gagne ses duels, pas celui qui repond le mieux.
+     *
+     * Le calcul se limite aux poules a dessein. Sur le total brut, celui qui
+     * atteint la finale joue plus de manches et accumule mecaniquement plus de
+     * points : le prix reviendrait au vainqueur, ce qui viderait la
+     * recompense de son sens. En poules, tout le monde joue le meme nombre de
+     * questions, donc les totaux sont comparables.
+     */
+    private function meilleurMarqueur(): ?array
+    {
+        $manchesPoule = Manche::where('type', 'poule')->pluck('id');
+
+        if ($manchesPoule->isEmpty()) {
+            return null;
+        }
+
+        $totaux = Point::whereIn('manche_id', $manchesPoule)
+            ->whereNull('annule_le')
+            ->selectRaw('equipe_id, SUM(points) AS total')
+            ->groupBy('equipe_id')
+            ->orderByDesc('total')
+            ->first();
+
+        if (! $totaux || $totaux->total <= 0) {
+            return null;
+        }
+
+        $equipe = Equipe::with('participants')->find($totaux->equipe_id);
+
+        return [
+            'libelle' => $equipe?->libelle,
+            'points'  => (int) $totaux->total,
+        ];
     }
 
     private function classementGeneral(): array

@@ -106,6 +106,12 @@ class ReglagesSeeder extends Seeder
                 'valeur'  => '2000',
             ],
             [
+                'cle' => 'prix.meilleur_marqueur', 'groupe' => 'prix', 'type' => 'nombre',
+                'libelle' => 'Prix du meilleur marqueur (FCFA)',
+                'aide'    => 'Calcule sur les poules seulement : sur le total general, ce serait presque toujours le vainqueur.',
+                'valeur'  => '2000',
+            ],
+            [
                 'cle' => 'prix.animateurs', 'groupe' => 'prix', 'type' => 'nombre',
                 'libelle' => 'Enveloppe des animateurs (FCFA)', 'valeur' => '8000',
             ],
