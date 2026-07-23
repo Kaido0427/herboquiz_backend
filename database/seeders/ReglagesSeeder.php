@@ -257,6 +257,54 @@ class ReglagesSeeder extends Seeder
                 'aide'    => 'Le duo divise par deux le nombre de repondants et fait jouer les faibles avec les forts.',
                 'valeur'  => '25',
             ],
+
+            // ---------- Messages prets a coller dans le groupe ----------
+            // Ces textes ne sont PAS l'interface : ce sont des messages que
+            // l'organisateur envoie sur Messenger/WhatsApp. Les emojis y sont
+            // donc a leur place (la regle « pas d'emoji dans le code » vise
+            // l'UI, pas le contenu envoye). Les {{variables}} sont remplacees
+            // a la copie par les vraies valeurs des reglages : le message ne
+            // peut pas se desynchroniser du lien, de la date ou des prix.
+            [
+                'cle' => 'messages.ouverture', 'groupe' => 'messages', 'type' => 'markdown',
+                'libelle' => 'Ouverture des inscriptions',
+                'aide'    => 'Le message d\'annonce a poster en premier dans le groupe.',
+                'valeur'  => "🌿 {{nom_tournoi}} 🌿\n\n"
+                    . "Les inscriptions sont ouvertes ! La {{organisateur}} lance son tournoi de quiz.\n\n"
+                    . "📍 On joue dans CE groupe ({{canal_poules}}). Les phases finales passeront sur {{canal_finales}}.\n"
+                    . "🗓️ Coup d'envoi : {{date_debut}}.\n\n"
+                    . "✍️ Pour t'inscrire, un seul lien :\n{{lien_inscription}}\n\n"
+                    . "⏰ Clôture des inscriptions : {{date_limite}}. Après, on ne prend plus personne.\n\n"
+                    . "🏆 À gagner :\n"
+                    . "• 1er : {{prix_premier}}\n"
+                    . "• 2e : {{prix_deuxieme}}\n"
+                    . "• 3e : {{prix_troisieme}}\n"
+                    . "• Meilleur marqueur : {{prix_meilleur}}\n\n"
+                    . "Pas besoin de forfait : tout se joue ici, dans le groupe. Le lien sert juste à s'inscrire et à suivre le classement.\n\n"
+                    . "Que le meilleur gagne ! 💪",
+            ],
+            [
+                'cle' => 'messages.rappel_cloture', 'groupe' => 'messages', 'type' => 'markdown',
+                'libelle' => 'Rappel — clôture des inscriptions',
+                'aide'    => 'A envoyer quelques heures avant la date limite pour ramasser les retardataires.',
+                'valeur'  => "⏳ DERNIÈRE LIGNE DROITE\n\n"
+                    . "Les inscriptions au {{nom_tournoi}} ferment {{date_limite}}.\n\n"
+                    . "Tu n'es pas encore inscrit ? C'est maintenant ou jamais :\n{{lien_inscription}}\n\n"
+                    . "Après la clôture, la liste est définitive et les poules sont composées. Ne rate pas ça. 🌿",
+            ],
+            [
+                'cle' => 'messages.coup_envoi', 'groupe' => 'messages', 'type' => 'markdown',
+                'libelle' => 'Coup d\'envoi imminent',
+                'aide'    => 'A poster le jour du tournoi, avant la premiere manche. Rappelle la regle du jeu.',
+                'valeur'  => "🔥 ÇA COMMENCE {{date_debut}} 🔥\n\n"
+                    . "Le {{nom_tournoi}} démarre ! Rendez-vous ICI, dans le groupe.\n\n"
+                    . "Comment ça marche :\n"
+                    . "1️⃣ L'animateur pose une question puis annonce STOP.\n"
+                    . "2️⃣ La PREMIÈRE bonne réponse marque le point.\n"
+                    . "3️⃣ Toute réponse après le STOP est nulle.\n\n"
+                    . "⚡ La rapidité fait partie du jeu. L'orthographe approximative est acceptée tant que la réponse est reconnaissable.\n\n"
+                    . "Reste connecté au groupe. Bonne chance à tous ! 🌿",
+            ],
         ];
     }
 }

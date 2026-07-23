@@ -66,6 +66,10 @@ jobs:
           fi
 
           php artisan migrate --force --no-interaction
+          # Pose les reglages manquants (nouveaux textes, nouveaux messages...).
+          # Idempotent par conception : n'insere que les cles absentes, n'ecrase
+          # JAMAIS une valeur deja modifiee par un administrateur.
+          php artisan db:seed --class=ReglagesSeeder --force --no-interaction
           php artisan config:clear
           php artisan route:clear
           chmod -R 775 storage bootstrap/cache
