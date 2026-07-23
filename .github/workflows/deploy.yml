@@ -38,12 +38,17 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -T 10 -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
+      # storage/ et bootstrap/cache/ portent l'etat d'execution : journaux,
+      # cache, sessions. PHP y ecrit sous l'identite www-data, que le compte de
+      # deploiement ne peut pas supprimer — d'ou l'echec de --delete. Et meme
+      # sans probleme de droits, les synchroniser effacerait des donnees vivantes
+      # a chaque deploiement. On les laisse donc entierement au serveur.
       - name: Envoyer le code
         run: |
           rsync -az --delete \
             -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=30" \
-            --exclude '.git' --exclude '.github' --exclude 'tests' \
-            --exclude '.env' --exclude 'storage/logs/*' \
+            --exclude '.git' --exclude '.github' --exclude 'tests' --exclude '.env' \
+            --exclude 'storage' --exclude 'bootstrap/cache' \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
 
       - name: Migrer et vider les caches
