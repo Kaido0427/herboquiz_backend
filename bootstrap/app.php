@@ -17,6 +17,14 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Sans cela, une requete non authentifiee produit une 500 : Laravel
+        // cherche a rediriger vers une page de connexion qui n'existe pas dans
+        // une API. Le frontend, qui nettoie la session sur 401, ne verrait
+        // jamais le signal et laisserait l'utilisateur bloque.
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            return response()->json(['message' => 'Non authentifie.'], 401);
+        });
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
