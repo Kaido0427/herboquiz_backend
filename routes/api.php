@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AccesController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EquipeController;
+use App\Http\Controllers\Api\InscriptionController;
 use App\Http\Controllers\Api\MancheController;
 use App\Http\Controllers\Api\MembreController;
 use App\Http\Controllers\Api\ParticipantController;
@@ -19,6 +20,14 @@ use Illuminate\Support\Facades\Route;
 // connecter : ils jouent dans Messenger, ils viennent juste lire le classement.
 // ---------------------------------------------------------------------------
 Route::get('public', [PublicController::class, 'index']);
+
+// Inscription en autonomie. Route publique, donc exposee : la limitation de
+// debit n'est pas un confort. Sans elle, cent inscriptions envoyees en une
+// minute fausseraient le dimensionnement du format avant le coup d'envoi.
+Route::post('inscription/verifier', [InscriptionController::class, 'verifier'])
+    ->middleware('throttle:20,1');
+Route::post('inscription', [InscriptionController::class, 'inscrire'])
+    ->middleware('throttle:5,10');
 
 Route::post('connexion/verifier', [AuthController::class, 'verifier'])
     ->middleware('throttle:10,1');
