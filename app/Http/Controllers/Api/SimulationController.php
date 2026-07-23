@@ -141,8 +141,20 @@ class SimulationController extends Controller
             return response()->json(['message' => 'Aucune equipe a repartir.'], 422);
         }
 
+        // Refuser d'ecraser un tournoi deja commence : appliquer un nouveau
+        // format effacerait les manches en cours et les points avec elles.
+        if (\App\Models\Point::whereNull('annule_le')->exists()) {
+            return response()->json([
+                'message' => 'Des points ont deja ete attribues : changer le format effacerait le tournoi en cours.',
+            ], 409);
+        }
+
         DB::transaction(function () use ($data, $equipes) {
-            Poule::query()->delete();
+            // Les anciennes manches de poule doivent partir avec leurs poules,
+            // sinon chaque nouvelle simulation empile des manches fantomes que
+            // plus rien ne rattache a un format.
+            Manche::where('type', 'poule')->forceDelete();
+            Poule::query()->forceDelete();
 
             $poules = collect(range(1, $data['nb_poules']))->map(fn ($i) => Poule::create([
                 'nom'          => 'Poule ' . chr(64 + $i),

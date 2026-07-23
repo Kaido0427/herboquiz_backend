@@ -61,6 +61,7 @@ class PhaseController extends Controller
             'dernier_tour_fini'  => $tourFini,
             'peut_generer'       => $peutGenerer,
             'prochain_tour'      => $prochain,
+            'egalites_barrage'   => $this->egalitesALaBarre(),
             'tours' => $duels->groupBy('ordre')->map(fn ($g, $ordre) => [
                 'ordre'   => (int) $ordre,
                 'nom'     => $g->first()->phase,
@@ -191,21 +192,89 @@ class PhaseController extends Controller
     {
         $out = [];
 
-        foreach (Poule::with('equipes')->orderBy('ordre')->get() as $poule) {
-            $manches = Manche::where('poule_id', $poule->id)->get();
-
-            $totaux = [];
-            foreach ($manches as $m) {
-                foreach ($m->classement() as $ligne) {
-                    $totaux[$ligne['equipe_id']] = ($totaux[$ligne['equipe_id']] ?? 0) + $ligne['points'];
-                }
-            }
-
-            arsort($totaux);
-            $out = array_merge($out, array_slice(array_keys($totaux), 0, $poule->nb_qualifies));
+        foreach (Poule::orderBy('ordre')->get() as $poule) {
+            $classe = $this->classementPoule($poule);
+            $out = array_merge($out, array_slice(array_column($classe, 'equipe_id'), 0, $poule->nb_qualifies));
         }
 
         return $out;
+    }
+
+    /**
+     * Classement d'une poule, avec un departage EXPLICITE.
+     *
+     * A points egaux, c'est la rapidite qui tranche : celle qui a atteint son
+     * total en premier passe devant. Sans cette regle, l'ordre sortait de la
+     * base — donc arbitraire, et impossible a justifier devant quelqu'un qui
+     * rate la qualification a un point pres.
+     */
+    private function classementPoule(Poule $poule): array
+    {
+        $manches = Manche::where('poule_id', $poule->id)->pluck('id');
+
+        $lignes = \App\Models\Point::whereIn('manche_id', $manches)
+            ->whereNull('annule_le')
+            ->selectRaw('equipe_id, SUM(points) AS total, MAX(created_at) AS dernier')
+            ->groupBy('equipe_id')
+            ->get();
+
+        // Les equipes sans aucun point doivent figurer au classement : sans
+        // elles, une poule ou personne ne marque ne qualifierait personne.
+        $vues = $lignes->pluck('equipe_id')->all();
+        foreach ($poule->equipes as $e) {
+            if (! in_array($e->id, $vues, true)) {
+                $lignes->push((object) ['equipe_id' => $e->id, 'total' => 0, 'dernier' => null]);
+            }
+        }
+
+        $classe = $lignes->map(fn ($l) => [
+            'equipe_id' => $l->equipe_id,
+            'points'    => (int) $l->total,
+            'dernier'   => $l->dernier,
+        ])->sort(function ($a, $b) {
+            if ($a['points'] !== $b['points']) {
+                return $b['points'] <=> $a['points'];
+            }
+            // A egalite de points : le plus rapide devant. Null (aucun point)
+            // passe en dernier.
+            return ($a['dernier'] ?? '9999') <=> ($b['dernier'] ?? '9999');
+        })->values()->all();
+
+        return $classe;
+    }
+
+    /**
+     * Egalites PARFAITES a la barre de qualification.
+     *
+     * Meme total ET meme instant : la rapidite ne departage plus. Il faut alors
+     * une question de barrage, et l'organisateur doit le savoir AVANT
+     * d'annoncer les qualifies au groupe.
+     */
+    private function egalitesALaBarre(): array
+    {
+        $alertes = [];
+
+        foreach (Poule::orderBy('ordre')->get() as $poule) {
+            $classe = $this->classementPoule($poule);
+            $n = $poule->nb_qualifies;
+
+            if (count($classe) <= $n) {
+                continue;
+            }
+
+            $dernierQualifie = $classe[$n - 1];
+            $premierElimine  = $classe[$n];
+
+            if ($dernierQualifie['points'] === $premierElimine['points']
+                && $dernierQualifie['dernier'] === $premierElimine['dernier']) {
+                $alertes[] = [
+                    'poule'  => $poule->nom,
+                    'points' => $dernierQualifie['points'],
+                ];
+            }
+        }
+
+        return $alertes;
     }
 
     /** Le vainqueur d'un duel est celui qui mene au classement de la manche. */

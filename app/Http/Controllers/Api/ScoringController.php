@@ -61,6 +61,18 @@ class ScoringController extends Controller
             'question_id' => ['nullable', 'uuid', 'exists:questions,id'],
         ]);
 
+        // L'equipe doit REELLEMENT jouer cette manche. Sans ce controle, un
+        // point partait dans le vide : il n'apparaissait pas au classement de
+        // la manche (qui ne parcourt que ses equipes) mais comptait quand meme
+        // au classement general affiche publiquement. Un ecart inexplicable
+        // entre les deux, impossible a diagnostiquer un soir de match.
+        if (! empty($data['equipe_id'])
+            && ! $manche->equipes()->whereKey($data['equipe_id'])->exists()) {
+            return response()->json([
+                'message' => 'Cette equipe ne participe pas a cette manche.',
+            ], 422);
+        }
+
         $session = $request->user();
 
         $point = DB::transaction(function () use ($manche, $data, $session) {
@@ -83,6 +95,16 @@ class ScoringController extends Controller
 
             if ($manche->statut === 'a_venir') {
                 $manche->update(['statut' => 'en_cours']);
+            }
+
+            // Cloture automatique quand toutes les questions prevues sont
+            // passees. Sinon l'animateur doit penser a cliquer « terminer », et
+            // s'il l'oublie la generation du tour suivant reste bloquee sans
+            // que personne ne comprenne pourquoi.
+            if ($manche->type === 'poule'
+                && $manche->nb_questions_prevu > 0
+                && $manche->question_courante >= $manche->nb_questions_prevu) {
+                $manche->update(['statut' => 'terminee']);
             }
 
             return $point;
