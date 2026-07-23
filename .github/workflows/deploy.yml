@@ -1,0 +1,73 @@
+name: Deploy HerboQuiz Backend
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  workflow_dispatch:
+
+# Deux deploiements simultanes se marcheraient dessus pendant les migrations.
+concurrency:
+  group: deploy-herboquiz-backend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparer PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, mbstring, bcmath
+          coverage: none
+
+      - name: Installer les dependances
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Cle SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 10 -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Envoyer le code
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=30" \
+            --exclude '.git' --exclude '.github' --exclude 'tests' \
+            --exclude '.env' --exclude 'storage/logs/*' \
+            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
+
+      - name: Migrer et vider les caches
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash <<'DISTANT'
+          set -e
+          cd ${{ secrets.DEPLOY_PATH }}
+
+          # Garde-fou volontaire : le .env de production n'est jamais versionne.
+          # S'il manque, mieux vaut echouer bruyamment que servir une app cassee.
+          if [ ! -f .env ]; then
+            echo "ERREUR : .env absent sur le serveur, deploiement interrompu"
+            exit 1
+          fi
+
+          php artisan migrate --force --no-interaction
+          php artisan config:clear
+          php artisan route:clear
+          chmod -R 775 storage bootstrap/cache
+          DISTANT
+
+      - name: Verifier que l'API repond
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://herboquiz.novafriq.africa/api/public)
+          echo "API -> $code"
+          [ "$code" = "200" ] || exit 1
