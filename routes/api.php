@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('manches', MancheController::class)->only(['store', 'update', 'destroy']);
 
         Route::post('questions/lot', [QuestionController::class, 'storeLot']);
+        Route::post('questions/affecter', [QuestionController::class, 'affecter']);
         Route::apiResource('questions', QuestionController::class)->except(['index', 'show']);
 
         Route::get('preparation', [PreparationController::class, 'index']);
