@@ -138,6 +138,23 @@ class ReglagesSeeder extends Seeder
                 'valeur'  => 'Le savoir est notre force, l\'excellence est notre objectif.',
             ],
 
+            // ---------- Signature discrete ----------
+            [
+                'cle' => 'signature.texte', 'groupe' => 'signature', 'type' => 'texte',
+                'libelle' => 'Mention en pied de page',
+                'aide'    => 'Reste discrete a dessein : le tournoi appartient au groupe, pas a son hebergeur.',
+                'valeur'  => 'Propulse par NovafriQ',
+            ],
+            [
+                'cle' => 'signature.lien', 'groupe' => 'signature', 'type' => 'texte',
+                'libelle' => 'Lien de la mention',
+                'valeur'  => 'https://novafriq.africa',
+            ],
+            [
+                'cle' => 'signature.active', 'groupe' => 'signature', 'type' => 'booleen',
+                'libelle' => 'Afficher la mention', 'valeur' => '1',
+            ],
+
             // ---------- Courriel de confirmation ----------
             [
                 'cle' => 'email.actif', 'groupe' => 'email', 'type' => 'booleen',

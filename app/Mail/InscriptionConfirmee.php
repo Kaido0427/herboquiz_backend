@@ -39,6 +39,10 @@ class InscriptionConfirmee extends Mailable
                 'debut'    => (string) Reglage::valeur('tournoi.debut', ''),
                 'site'     => (string) Reglage::valeur('tournoi.url', config('app.url')),
                 'signature' => (string) Reglage::valeur('tournoi.organisateur', ''),
+                'mention'   => Reglage::valeur('signature.active', true)
+                    ? (string) Reglage::valeur('signature.texte', '')
+                    : '',
+                'mentionLien' => (string) Reglage::valeur('signature.lien', ''),
             ],
         );
     }

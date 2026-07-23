@@ -27,4 +27,13 @@
 
     <p style="margin:24px 0 0;font-size:12px;color:#5F7896">{{ $signature }}</p>
   </div>
+
+  {{-- Une seule ligne, hors du bloc principal. Un courriel de confirmation est
+       un message transactionnel : le charger de promotion nuit a sa lisibilite
+       et a sa delivrabilite. --}}
+  @if ($mention)
+    <p style="max-width:520px;margin:14px auto 0;text-align:center;font-size:11px;color:#5F7896">
+      <a href="{{ $mentionLien }}" style="color:#5F7896;text-decoration:none">{{ $mention }}</a>
+    </p>
+  @endif
 </div>
