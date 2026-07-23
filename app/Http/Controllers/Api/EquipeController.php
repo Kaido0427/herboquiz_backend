@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Equipe;
 use App\Models\Participant;
+use App\Models\Point;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -56,8 +57,21 @@ class EquipeController extends Controller
     public function generer(Request $request)
     {
         $data = $request->validate([
-            'mode' => ['required', 'in:solo,duo'],
+            'mode'      => ['required', 'in:solo,duo'],
+            'confirmer' => ['nullable', 'boolean'],
         ]);
+
+        // Garde-fou. Reconstituer les equipes les SUPPRIME, ce qui detache
+        // toutes les manches de leurs participants et fait disparaitre les
+        // points deja attribues. Un avertissement a l'ecran ne suffit pas :
+        // en plein tournoi, un appui malheureux effacerait la competition en
+        // cours. On refuse donc tant que ce n'est pas confirme explicitement.
+        if (Point::whereNull('annule_le')->exists() && ! $request->boolean('confirmer')) {
+            return response()->json([
+                'message'          => 'Des points ont deja ete attribues : reconstituer les equipes effacerait le tournoi en cours.',
+                'confirmation_requise' => true,
+            ], 409);
+        }
 
         $joueurs = Participant::where('confirme', true)->get()->shuffle()->values();
 

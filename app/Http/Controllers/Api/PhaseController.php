@@ -114,6 +114,28 @@ class PhaseController extends Controller
             $liste = array_values($qualifies);
             $faits = [];
 
+            // Effectif impair : sans traitement, la boucle d'appariement laisse
+            // le qualifie du milieu sans adversaire et l'ELIMINE en silence —
+            // quelqu'un qui a gagne sa poule disparaitrait du tournoi. On donne
+            // donc un tour d'exemption au mieux classe, comme dans n'importe
+            // quel tableau a effectif impair.
+            if (count($liste) % 2 === 1) {
+                $exempt = array_shift($liste);
+
+                $manche = Manche::create([
+                    'libelle'            => $nom . ' — exempt',
+                    'type'               => 'duel',
+                    'phase'              => $nom,
+                    'nb_questions_prevu' => 0,
+                    'score_cible'        => null,
+                    'date_prevue'        => $dateTour,
+                    'statut'             => 'terminee',   // rien a jouer
+                    'ordre'              => $ordre,
+                ]);
+                $manche->equipes()->attach([$exempt]);
+                $faits[] = $manche->libelle;
+            }
+
             // Tete de serie contre dernier qualifie : le premier de sa poule ne
             // doit pas tomber sur un autre premier des le premier tour.
             for ($i = 0, $j = count($liste) - 1; $i < $j; $i++, $j--) {
