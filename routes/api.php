@@ -49,7 +49,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('manches/{manche}/terminer', [ScoringController::class, 'terminer']);
     Route::get('manches', [MancheController::class, 'index']);
     Route::get('manches/{manche}', [MancheController::class, 'show']);
+    // Preparer les questions fait partie du travail de l'animateur : c'est lui
+    // qui tient la manche. Il garde en revanche interdiction de toucher aux
+    // participants, aux reglages, au format et aux acces.
     Route::get('questions', [QuestionController::class, 'index']);
+    Route::post('questions/lot', [QuestionController::class, 'storeLot']);
+    Route::post('questions/affecter', [QuestionController::class, 'affecter']);
+    Route::apiResource('questions', QuestionController::class)->except(['index', 'show']);
 
     // -----------------------------------------------------------------------
     // Administration. Le controle est ici, cote serveur : masquer un bouton
@@ -67,10 +73,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('equipes', EquipeController::class)->except(['show']);
 
         Route::apiResource('manches', MancheController::class)->only(['store', 'update', 'destroy']);
-
-        Route::post('questions/lot', [QuestionController::class, 'storeLot']);
-        Route::post('questions/affecter', [QuestionController::class, 'affecter']);
-        Route::apiResource('questions', QuestionController::class)->except(['index', 'show']);
 
         Route::get('preparation', [PreparationController::class, 'index']);
         Route::get('phases/etat', [PhaseController::class, 'etat']);
