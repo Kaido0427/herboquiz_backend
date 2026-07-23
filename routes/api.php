@@ -75,7 +75,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('equipes/generer', [EquipeController::class, 'generer']);
         Route::apiResource('equipes', EquipeController::class)->except(['show']);
 
-        Route::apiResource('manches', MancheController::class)->only(['store', 'update', 'destroy']);
+        // Routes ecrites a la main plutot qu'apiResource : Laravel singularise
+        // « manches » en « manch » pour nommer le parametre, la liaison
+        // automatique ne trouvait donc jamais l'objet. La suppression repondait
+        // « Manche supprimee » sans rien supprimer — un succes qui ment.
+        Route::post('manches', [MancheController::class, 'store']);
+        Route::put('manches/{manche}', [MancheController::class, 'update']);
+        Route::delete('manches/{manche}', [MancheController::class, 'destroy']);
 
         Route::get('preparation', [PreparationController::class, 'index']);
         Route::get('phases/etat', [PhaseController::class, 'etat']);
