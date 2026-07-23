@@ -138,6 +138,30 @@ class ReglagesSeeder extends Seeder
                 'valeur'  => 'Le savoir est notre force, l\'excellence est notre objectif.',
             ],
 
+            // ---------- Courriel de confirmation ----------
+            [
+                'cle' => 'email.actif', 'groupe' => 'email', 'type' => 'booleen',
+                'libelle' => 'Envoyer un courriel de confirmation',
+                'aide'    => 'A l\'inscription. Si l\'envoi echoue, l\'inscription reste enregistree.',
+                'valeur'  => '1',
+            ],
+            [
+                'cle' => 'email.inscription_sujet', 'groupe' => 'email', 'type' => 'texte',
+                'libelle' => 'Objet du courriel',
+                'valeur'  => 'Votre inscription au tournoi est enregistree',
+            ],
+            [
+                'cle' => 'email.inscription_corps', 'groupe' => 'email', 'type' => 'markdown',
+                'libelle' => 'Corps du courriel',
+                'aide'    => 'Une ligne vide separe deux paragraphes.',
+                'valeur'  => "Votre inscription au tournoi est bien prise en compte.\n\nLes matchs de poules se jouent dans le groupe Messenger, les phases finales sur WhatsApp. Restez attentif au groupe : le format et le calendrier y seront annonces des la cloture des inscriptions.\n\nA bientot, et que le meilleur gagne.",
+            ],
+            [
+                'cle' => 'tournoi.url', 'groupe' => 'general', 'type' => 'texte',
+                'libelle' => 'Adresse du site',
+                'valeur'  => 'https://herboquiz.novafriq.africa',
+            ],
+
             // ---------- Regles de jeu (parametres, jamais des constantes) ----------
             [
                 'cle' => 'jeu.points_bonne_reponse', 'groupe' => 'jeu', 'type' => 'nombre',

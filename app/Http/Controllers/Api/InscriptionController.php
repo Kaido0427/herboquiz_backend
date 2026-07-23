@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
+use App\Mail\InscriptionConfirmee;
 use App\Models\Reglage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -146,6 +149,8 @@ class InscriptionController extends Controller
                 'confirme'      => true,
             ]);
 
+            $this->confirmer($existant);
+
             return response()->json([
                 'message'  => 'Votre inscription est confirmee.',
                 'complete' => true,
@@ -159,9 +164,34 @@ class InscriptionController extends Controller
             'confirme'     => true,
         ]);
 
+        $this->confirmer($p);
+
         return response()->json([
             'message' => 'Votre inscription est enregistree.',
             'nom'     => $p->nom_affiche,
         ], 201);
+    }
+
+    /**
+     * Accuse de reception.
+     *
+     * L'envoi ne doit JAMAIS faire echouer l'inscription : un relais de
+     * messagerie indisponible ferait perdre un joueur alors que sa fiche est
+     * deja enregistree. On journalise l'echec et on continue.
+     */
+    private function confirmer(Participant $p): void
+    {
+        if (! Reglage::valeur('email.actif', true) || ! $p->email) {
+            return;
+        }
+
+        try {
+            Mail::to($p->email)->send(new InscriptionConfirmee($p));
+        } catch (\Throwable $e) {
+            Log::warning('Courriel de confirmation non envoye', [
+                'participant' => $p->id,
+                'erreur'      => $e->getMessage(),
+            ]);
+        }
     }
 }
