@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\InscriptionController;
 use App\Http\Controllers\Api\MancheController;
 use App\Http\Controllers\Api\MembreController;
 use App\Http\Controllers\Api\ParticipantController;
+use App\Http\Controllers\Api\PerformanceController;
 use App\Http\Controllers\Api\PhaseController;
 use App\Http\Controllers\Api\PreparationController;
 use App\Http\Controllers\Api\PublicController;
@@ -52,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Preparer les questions fait partie du travail de l'animateur : c'est lui
     // qui tient la manche. Il garde en revanche interdiction de toucher aux
     // participants, aux reglages, au format et aux acces.
+    Route::get('participants/{participant}/performances', [PerformanceController::class, 'show']);
     Route::get('questions', [QuestionController::class, 'index']);
     Route::post('questions/lot', [QuestionController::class, 'storeLot']);
     Route::post('questions/affecter', [QuestionController::class, 'affecter']);
