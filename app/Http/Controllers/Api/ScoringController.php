@@ -167,11 +167,63 @@ class ScoringController extends Controller
         return response()->json(['statut' => $manche->statut]);
     }
 
+    /**
+     * Trancher une egalite PARFAITE par un barrage.
+     *
+     * A total et rapidite egaux, la regle automatique ne departage plus.
+     * L'animateur pose une question decisive dans le groupe et designe le
+     * vainqueur ici. On l'enregistre comme une ligne a points = 0 : elle ne
+     * gonfle aucun total (ni le classement, ni le prix du meilleur marqueur),
+     * elle place seulement le vainqueur devant a total egal, et garde le nom de
+     * qui a tranche. Un seul barrage actif par manche : re-designer remplace le
+     * precedent sans l'effacer. `equipe_id` absent = on retire le barrage.
+     */
+    public function barrage(Request $request, Manche $manche)
+    {
+        $data = $request->validate([
+            'equipe_id' => ['nullable', 'uuid', 'exists:equipes,id'],
+        ]);
+
+        if (! empty($data['equipe_id'])
+            && ! $manche->equipes()->whereKey($data['equipe_id'])->exists()) {
+            return response()->json([
+                'message' => 'Cette equipe ne participe pas a cette manche.',
+            ], 422);
+        }
+
+        $session = $request->user();
+
+        DB::transaction(function () use ($manche, $data, $session) {
+            $manche->points()->where('est_departage', true)->whereNull('annule_le')
+                ->update(['annule_le' => now(), 'annule_par' => $session->nom]);
+
+            if (! empty($data['equipe_id'])) {
+                Point::create([
+                    'manche_id'     => $manche->id,
+                    'equipe_id'     => $data['equipe_id'],
+                    'points'        => 0,
+                    'est_departage' => true,
+                    'attribue_par'  => $session->nom,
+                    'role_auteur'   => $session->role,
+                ]);
+            }
+        });
+
+        $session->update(['derniere_activite' => now()]);
+        $manche->refresh()->load('equipes.participants');
+
+        return response()->json(['classement' => $manche->classement()]);
+    }
+
     private function dernierPoint(Manche $manche, bool $brut = false)
     {
         // Depart sur created_at seul : deux points attribues dans la meme
         // seconde rendaient le choix ambigu, et on annulait parfois le mauvais.
+        // On ignore les barrages : « annuler le dernier point » ne doit retirer
+        // qu'un vrai point marque, jamais un departage (qui se retire depuis son
+        // propre outil).
         $p = $manche->points()->whereNull('annule_le')
+            ->where('est_departage', false)
             ->orderByDesc('created_at')->orderByDesc('id')->first();
 
         if (! $p || $brut) {

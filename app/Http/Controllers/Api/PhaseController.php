@@ -201,54 +201,27 @@ class PhaseController extends Controller
     }
 
     /**
-     * Classement d'une poule, avec un departage EXPLICITE.
+     * Classement d'une poule, avec le departage du projet.
      *
-     * A points egaux, c'est la rapidite qui tranche : celle qui a atteint son
-     * total en premier passe devant. Sans cette regle, l'ordre sortait de la
-     * base — donc arbitraire, et impossible a justifier devant quelqu'un qui
-     * rate la qualification a un point pres.
+     * Passe par le helper partage : points, puis rapidite (le plus rapide a
+     * atteint son total devant), puis barrage. Meme regle exactement que le
+     * classement de la manche en direct — c'est ce qui garantit que l'ordre vu
+     * a l'ecran est celui qui qualifie.
      */
     private function classementPoule(Poule $poule): array
     {
         $manches = Manche::where('poule_id', $poule->id)->pluck('id');
 
-        $lignes = \App\Models\Point::whereIn('manche_id', $manches)
-            ->whereNull('annule_le')
-            ->selectRaw('equipe_id, SUM(points) AS total, MAX(created_at) AS dernier')
-            ->groupBy('equipe_id')
-            ->get();
-
-        // Les equipes sans aucun point doivent figurer au classement : sans
-        // elles, une poule ou personne ne marque ne qualifierait personne.
-        $vues = $lignes->pluck('equipe_id')->all();
-        foreach ($poule->equipes as $e) {
-            if (! in_array($e->id, $vues, true)) {
-                $lignes->push((object) ['equipe_id' => $e->id, 'total' => 0, 'dernier' => null]);
-            }
-        }
-
-        $classe = $lignes->map(fn ($l) => [
-            'equipe_id' => $l->equipe_id,
-            'points'    => (int) $l->total,
-            'dernier'   => $l->dernier,
-        ])->sort(function ($a, $b) {
-            if ($a['points'] !== $b['points']) {
-                return $b['points'] <=> $a['points'];
-            }
-            // A egalite de points : le plus rapide devant. Null (aucun point)
-            // passe en dernier.
-            return ($a['dernier'] ?? '9999') <=> ($b['dernier'] ?? '9999');
-        })->values()->all();
-
-        return $classe;
+        return \App\Support\Classement::pour($poule->equipes, $manches);
     }
 
     /**
      * Egalites PARFAITES a la barre de qualification.
      *
-     * Meme total ET meme instant : la rapidite ne departage plus. Il faut alors
-     * une question de barrage, et l'organisateur doit le savoir AVANT
-     * d'annoncer les qualifies au groupe.
+     * Meme total ET meme instant : la rapidite ne departage plus, et aucun
+     * barrage n'a encore tranche. L'organisateur doit le savoir AVANT d'annoncer
+     * les qualifies. Une egalite parfaite deja resolue par un barrage
+     * (`barrage_requis` retombe a faux) ne declenche donc plus l'alerte.
      */
     private function egalitesALaBarre(): array
     {
@@ -265,8 +238,12 @@ class PhaseController extends Controller
             $dernierQualifie = $classe[$n - 1];
             $premierElimine  = $classe[$n];
 
+            // L'egalite ne compte que si elle STRADDLE la barre : deux ex aequo
+            // parfaits tous deux qualifies (ou tous deux elimines) ne changent
+            // aucune qualification.
             if ($dernierQualifie['points'] === $premierElimine['points']
-                && $dernierQualifie['dernier'] === $premierElimine['dernier']) {
+                && $dernierQualifie['dernier'] === $premierElimine['dernier']
+                && ($dernierQualifie['barrage_requis'] || $premierElimine['barrage_requis'])) {
                 $alertes[] = [
                     'poule'  => $poule->nom,
                     'points' => $dernierQualifie['points'],

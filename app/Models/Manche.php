@@ -51,18 +51,13 @@ class Manche extends Model
      * Classement de la manche, calcule en sommant le journal des points.
      * Aucun total n'est stocke : c'est ce qui rend l'annulation triviale et
      * l'historique incontestable.
+     *
+     * Le tri (points, puis rapidite, puis barrage) et les drapeaux d'egalite
+     * viennent du helper partage : la manche en direct et la qualification
+     * suivent ainsi EXACTEMENT la meme regle.
      */
     public function classement(): array
     {
-        $totaux = $this->points()->whereNull('annule_le')
-            ->selectRaw('equipe_id, SUM(points) AS total')
-            ->groupBy('equipe_id')
-            ->pluck('total', 'equipe_id');
-
-        return $this->equipes->map(fn ($e) => [
-            'equipe_id' => $e->id,
-            'libelle'   => $e->libelle,
-            'points'    => (int) ($totaux[$e->id] ?? 0),
-        ])->sortByDesc('points')->values()->all();
+        return \App\Support\Classement::pour($this->equipes, [$this->id]);
     }
 }

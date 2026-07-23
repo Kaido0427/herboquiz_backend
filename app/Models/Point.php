@@ -14,13 +14,16 @@ class Point extends Model
     use HasUuids;
 
     protected $fillable = [
-        'manche_id', 'question_id', 'equipe_id', 'points',
+        'manche_id', 'question_id', 'equipe_id', 'points', 'est_departage',
         'attribue_par', 'role_auteur', 'annule_le', 'annule_par',
     ];
 
     protected function casts(): array
     {
-        return ['annule_le' => 'datetime'];
+        return [
+            'annule_le'     => 'datetime',
+            'est_departage' => 'boolean',
+        ];
     }
 
     public function equipe()
