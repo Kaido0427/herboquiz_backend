@@ -141,19 +141,34 @@ class ReglagesSeeder extends Seeder
             // ---------- Regles de jeu (parametres, jamais des constantes) ----------
             [
                 'cle' => 'jeu.points_bonne_reponse', 'groupe' => 'jeu', 'type' => 'nombre',
-                'libelle' => 'Points par bonne reponse', 'valeur' => '1',
+                'libelle' => 'Points par bonne reponse',
+                'aide'    => 'Habitude du groupe : 10 points. Les seuils de duel s\'expriment en bonnes reponses, ils suivent donc automatiquement.',
+                'valeur'  => '10',
             ],
             [
                 'cle' => 'jeu.score_cible_duel', 'groupe' => 'jeu', 'type' => 'nombre',
-                'libelle' => 'Score pour gagner un duel',
-                'aide'    => 'Le duel s\'arrete des qu\'un joueur atteint ce score.',
+                'libelle' => 'Bonnes reponses pour gagner un duel',
+                'aide'    => 'Exprime en BONNES REPONSES, pas en points : changer la valeur d\'une bonne reponse ne dereglera pas les duels.',
                 'valeur'  => '5',
             ],
             [
                 'cle' => 'jeu.score_cible_finale', 'groupe' => 'jeu', 'type' => 'nombre',
-                'libelle' => 'Score pour gagner la finale',
+                'libelle' => 'Bonnes reponses pour gagner la finale',
                 'aide'    => 'Plus eleve que les autres duels : cela donne du poids au titre.',
                 'valeur'  => '7',
+            ],
+
+            [
+                'cle' => 'jeu.jours_entre_tours', 'groupe' => 'jeu', 'type' => 'nombre',
+                'libelle' => 'Jours entre deux tours',
+                'aide'    => 'Sert a proposer les dates des tours suivants. Chaque date reste modifiable.',
+                'valeur'  => '1',
+            ],
+            [
+                'cle' => 'jeu.heure_manche', 'groupe' => 'jeu', 'type' => 'texte',
+                'libelle' => 'Heure habituelle des manches',
+                'aide'    => 'Format 24h, par exemple 18:00. Heure du Benin.',
+                'valeur'  => '18:00',
             ],
 
             // ---------- Seuils de la simulation ----------

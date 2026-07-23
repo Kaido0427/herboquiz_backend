@@ -155,8 +155,14 @@ class ScoringController extends Controller
     private function estTerminee(Manche $manche): bool
     {
         if ($manche->type === 'duel' && $manche->score_cible) {
+            // score_cible est un nombre de BONNES REPONSES, pas de points.
+            // Sans cette conversion, passer la bonne reponse a 10 points
+            // terminerait un duel « premier a 5 » des la premiere question.
+            $parReponse = max(1, (int) Reglage::valeur('jeu.points_bonne_reponse', 1));
+            $seuil = $manche->score_cible * $parReponse;
+
             foreach ($manche->classement() as $ligne) {
-                if ($ligne['points'] >= $manche->score_cible) {
+                if ($ligne['points'] >= $seuil) {
                     return true;
                 }
             }

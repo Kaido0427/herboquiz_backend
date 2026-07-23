@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\EquipeController;
 use App\Http\Controllers\Api\MancheController;
 use App\Http\Controllers\Api\MembreController;
 use App\Http\Controllers\Api\ParticipantController;
+use App\Http\Controllers\Api\PhaseController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\QuestionController;
 use App\Http\Controllers\Api\ReglageController;
@@ -59,6 +60,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('questions/lot', [QuestionController::class, 'storeLot']);
         Route::apiResource('questions', QuestionController::class)->except(['index', 'show']);
+
+        Route::get('phases/etat', [PhaseController::class, 'etat']);
+        Route::post('phases/generer', [PhaseController::class, 'generer']);
 
         Route::post('simulation', [SimulationController::class, 'simuler']);
         Route::post('simulation/appliquer', [SimulationController::class, 'appliquer']);
