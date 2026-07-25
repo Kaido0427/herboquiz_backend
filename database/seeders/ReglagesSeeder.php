@@ -355,26 +355,6 @@ class ReglagesSeeder extends Seeder
                 'libelle' => 'Lien du site NovafriQ',
                 'valeur'  => 'https://novafriq.africa',
             ],
-            // Le vrai levier de conversion en local : un clic ouvre WhatsApp avec
-            // un message pret. 90-98% d'ouverture, zero friction (pas de
-            // formulaire). Le bouton n'apparait que si un numero est renseigne.
-            [
-                'cle' => 'promo.whatsapp_numero', 'groupe' => 'promo', 'type' => 'texte',
-                'libelle' => 'Numéro WhatsApp NovafriQ',
-                'aide'    => 'Format international SANS + ni espaces, ex : 22990000000. Laisser vide = pas de bouton WhatsApp.',
-                'valeur'  => '',
-            ],
-            [
-                'cle' => 'promo.whatsapp_cta', 'groupe' => 'promo', 'type' => 'texte',
-                'libelle' => 'Texte du bouton WhatsApp',
-                'valeur'  => 'Vous voulez une app comme celle-ci ? Écrivez-nous',
-            ],
-            [
-                'cle' => 'promo.whatsapp_message', 'groupe' => 'promo', 'type' => 'texte',
-                'libelle' => 'Message pré-rempli (WhatsApp)',
-                'aide'    => 'Ce que le visiteur enverra en un clic. Le « via HerboQuiz » sert a savoir d\'ou vient le contact.',
-                'valeur'  => 'Bonjour NovafriQ, je vous écris via HerboQuiz : j\'aimerais une application pour mon activité.',
-            ],
         ];
     }
 }
