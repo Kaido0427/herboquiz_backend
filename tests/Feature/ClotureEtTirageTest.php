@@ -163,4 +163,26 @@ class ClotureEtTirageTest extends TestCase
 
         $this->postJson('/api/simulation/retirer')->assertStatus(422);
     }
+
+    public function test_reconstituer_les_equipes_remplit_les_poules_existantes(): void
+    {
+        // Des poules existent (vides) ; on reconstitue les equipes. Avant, elles
+        // restaient vides et l'alerte « equipes non rattachees » revenait.
+        foreach (['Deen', 'Ada', 'Bob', 'Cid'] as $nom) {
+            Participant::create(['nom' => $nom, 'confirme' => true]);
+        }
+        foreach (['Poule A', 'Poule B'] as $i => $nom) {
+            $p = Poule::create(['nom' => $nom, 'nb_qualifies' => 2, 'ordre' => $i + 1]);
+            Manche::create(['libelle' => $nom, 'type' => 'poule', 'poule_id' => $p->id,
+                'nb_questions_prevu' => 12, 'ordre' => $i + 1]);
+        }
+        $this->admin();
+
+        $this->postJson('/api/equipes/generer', ['mode' => 'duo'])->assertOk();
+
+        // 4 joueurs en duo -> 2 equipes, toutes deux rattachees a une poule.
+        $this->assertSame(2, Equipe::count());
+        $this->assertSame(2, \DB::table('equipe_poule')->count());
+        $this->assertSame(2, \DB::table('equipe_manche')->count());
+    }
 }

@@ -88,6 +88,14 @@ class EquipeController extends Controller
                 $e = Equipe::create();
                 $e->participants()->sync($groupe->pluck('id'));
             }
+
+            // Si des poules existent deja, on y re-repartit tout de suite les
+            // nouvelles equipes. Sinon reconstituer laissait les poules vides et
+            // l'alerte « equipes non rattachees » revenait a chaque fois.
+            \App\Support\Tirage::repartir(
+                \App\Models\Poule::orderBy('ordre')->get(),
+                Equipe::where('active', true)->get(),
+            );
         });
 
         return response()->json([

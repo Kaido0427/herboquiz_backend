@@ -180,24 +180,17 @@ class SimulationController extends Controller
                 'ordre'        => $i,
             ]));
 
-            // Repartition en serpentin plutot qu'en blocs : evite de concentrer
-            // les inscrits d'un meme groupe d'amis dans la meme poule.
-            $equipes->shuffle()->values()->each(function ($e, $i) use ($poules) {
-                $poules[$i % $poules->count()]->equipes()->attach($e->id);
-            });
+            // Une manche (vide) par poule...
+            $poules->each(fn ($p) => Manche::create([
+                'libelle'            => $p->nom,
+                'type'               => 'poule',
+                'poule_id'           => $p->id,
+                'nb_questions_prevu' => $data['nb_questions'],
+                'ordre'              => $p->ordre,
+            ]));
 
-            $poules->each(function ($p) use ($data) {
-                Manche::create([
-                    'libelle'            => $p->nom,
-                    'type'               => 'poule',
-                    'poule_id'           => $p->id,
-                    'nb_questions_prevu' => $data['nb_questions'],
-                    'ordre'              => $p->ordre,
-                ]);
-
-                $manche = Manche::where('poule_id', $p->id)->latest()->first();
-                $manche->equipes()->attach($p->equipes->pluck('id'));
-            });
+            // ...puis le tirage partage remplit poules ET manches, en serpentin.
+            \App\Support\Tirage::repartir(Poule::orderBy('ordre')->get(), $equipes);
         });
 
         return response()->json(['message' => 'Poules et manches creees.']);
@@ -229,19 +222,7 @@ class SimulationController extends Controller
             return response()->json(['message' => 'Aucune equipe a repartir.'], 422);
         }
 
-        DB::transaction(function () use ($poules, $equipes) {
-            $parPoule = [];
-            $equipes->shuffle()->values()->each(function ($e, $i) use ($poules, &$parPoule) {
-                $parPoule[$poules[$i % $poules->count()]->id][] = $e->id;
-            });
-
-            foreach ($poules as $p) {
-                $ids = $parPoule[$p->id] ?? [];
-                $p->equipes()->sync($ids);                       // remplace le tirage precedent
-                Manche::where('poule_id', $p->id)->get()
-                    ->each(fn ($m) => $m->equipes()->sync($ids)); // et la manche suit
-            }
-        });
+        DB::transaction(fn () => \App\Support\Tirage::repartir($poules, $equipes));
 
         return response()->json(['message' => 'Poules re-tirees.']);
     }
