@@ -72,7 +72,12 @@ jobs:
           php artisan db:seed --class=ReglagesSeeder --force --no-interaction
           php artisan config:clear
           php artisan route:clear
-          chmod -R 775 storage bootstrap/cache
+          # storage/ et bootstrap/cache/ sont EXCLUS du rsync (donnees vivantes
+          # ecrites par www-data). Un chmod dessus depuis le compte de deploiement
+          # echoue forcement (« Operation not permitted » sur les fichiers www-data)
+          # et, avec set -e, faisait planter l'etape ALORS QUE le deploiement etait
+          # deja fait. Non-fatal et silencieux : on tente sans jamais casser le build.
+          chmod -R 775 storage bootstrap/cache 2>/dev/null || true
           DISTANT
 
       - name: Verifier que l'API repond
