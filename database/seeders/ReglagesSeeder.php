@@ -57,7 +57,7 @@ class ReglagesSeeder extends Seeder
                 'cle' => 'tournoi.debut', 'groupe' => 'general', 'type' => 'texte',
                 'libelle' => 'Date et heure du coup d\'envoi',
                 'aide'    => 'Affiche tel quel sur la page publique. Heure du Benin.',
-                'valeur'  => 'Lundi 27 juillet 2026 a 18h00',
+                'valeur'  => 'Lundi 27 juillet 2026 à 18h00',
             ],
             [
                 'cle' => 'tournoi.canal_poules', 'groupe' => 'general', 'type' => 'texte',
