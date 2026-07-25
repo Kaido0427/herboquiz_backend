@@ -85,9 +85,15 @@ class ReglagesSeeder extends Seeder
             ],
             [
                 'cle' => 'inscriptions.date_limite', 'groupe' => 'inscriptions', 'type' => 'texte',
-                'libelle' => 'Date limite d\'inscription',
-                'aide'    => 'Sans date de cloture, impossible de figer le format ni de composer les poules.',
-                'valeur'  => 'Dimanche 26 juillet 2026 a 20h00',
+                'libelle' => 'Date limite d\'inscription (texte affiche)',
+                'aide'    => 'Affiche tel quel sur la page publique. Sans date de cloture, impossible de figer le format ni de composer les poules.',
+                'valeur'  => 'Samedi 25 juillet 2026 à 20h00',
+            ],
+            [
+                'cle' => 'inscriptions.ferme_le', 'groupe' => 'inscriptions', 'type' => 'texte',
+                'libelle' => 'Fermeture automatique (date et heure)',
+                'aide'    => 'Format AAAA-MM-JJ HH:MM, heure du Benin. A cette heure PILE, les inscriptions se ferment seules : le formulaire disparait et « inscrire » refuse. Laisser vide pour desactiver la fermeture auto (seul l\'interrupteur compte alors).',
+                'valeur'  => '2026-07-25 20:00',
             ],
 
             // ---------- Prix ----------

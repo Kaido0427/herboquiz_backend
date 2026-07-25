@@ -103,7 +103,7 @@ class InscriptionController extends Controller
 
     public function inscrire(Request $request)
     {
-        if (! Reglage::valeur('inscriptions.ouvertes', true)) {
+        if (! \App\Support\Inscriptions::ouvertes()) {
             return response()->json(['message' => 'Les inscriptions sont fermees.'], 423);
         }
 

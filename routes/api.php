@@ -91,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('simulation', [SimulationController::class, 'simuler']);
         Route::post('simulation/appliquer', [SimulationController::class, 'appliquer']);
+        Route::post('simulation/retirer', [SimulationController::class, 'retirer']);
 
         Route::apiResource('membres', MembreController::class)->except(['show']);
 

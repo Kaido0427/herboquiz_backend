@@ -21,9 +21,15 @@ class PublicController extends Controller
 {
     public function index()
     {
+        $reglages = Reglage::orderBy('ordre')->get()
+            ->mapWithKeys(fn ($r) => [$r->cle => $r->valeur_typee]);
+
+        // On expose l'ouverture CALCULEE (interrupteur + fermeture auto a
+        // l'heure), pas le simple drapeau : a 20h la page se ferme d'elle-meme.
+        $reglages['inscriptions.ouvertes'] = \App\Support\Inscriptions::ouvertes();
+
         return response()->json([
-            'reglages'   => Reglage::orderBy('ordre')->get()
-                ->mapWithKeys(fn ($r) => [$r->cle => $r->valeur_typee]),
+            'reglages'   => $reglages,
             'classement' => $this->classementGeneral(),
             'poules'     => $this->poules(),
             'manches'    => Manche::with('poule')->orderBy('ordre')->get()

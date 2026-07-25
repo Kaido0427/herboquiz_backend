@@ -29,4 +29,16 @@ return [
     */
     'groupes_proprietaire' => ['signature', 'promo'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Fuseau horaire du tournoi
+    |--------------------------------------------------------------------------
+    |
+    | L'app tourne en UTC, mais les horaires annonces (coup d'envoi, cloture
+    | des inscriptions) sont a l'heure du Benin. C'est dans ce fuseau qu'on
+    | interprete la date de fermeture automatique des inscriptions.
+    |
+    */
+    'fuseau' => env('HERBOQUIZ_FUSEAU', 'Africa/Porto-Novo'),
+
 ];

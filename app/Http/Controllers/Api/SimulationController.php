@@ -30,13 +30,30 @@ class SimulationController extends Controller
             'mode'     => ['nullable', 'in:solo,duo,auto'],
         ]);
 
-        $effectif = $data['effectif'] ?? Participant::where('confirme', true)->count();
-        $mode     = $data['mode'] ?? 'auto';
+        $confirmes = Participant::where('confirme', true)->count();
 
-        return response()->json($this->calculer($effectif, $mode));
+        // Si les equipes sont DEJA constituees, on reflete la realite : les
+        // concurrents sont ces equipes, et le mode est le leur (duo si elles ont
+        // deux equipiers). Reproposer « solo » n'aurait aucun sens ici — le
+        // choix solo/duo se fait une seule fois, a la constitution des equipes.
+        $equipes = Equipe::where('active', true)->withCount('participants')->get();
+        if ($equipes->isNotEmpty()) {
+            $duo = $equipes->contains(fn ($e) => $e->participants_count > 1);
+
+            return response()->json($this->calculer($equipes->count(), $duo, $confirmes, reel: true));
+        }
+
+        // Pas encore d'equipes : planification a partir de l'effectif et du choix.
+        $effectif = $data['effectif'] ?? $confirmes;
+        $mode     = $data['mode'] ?? 'auto';
+        $seuilDuo = (int) Reglage::valeur('simulation.seuil_duo', 25);
+        $duo      = $mode === 'duo' || ($mode === 'auto' && $effectif >= $seuilDuo);
+        $entites  = $duo ? (int) ceil($effectif / 2) : $effectif;
+
+        return response()->json($this->calculer($entites, $duo, $effectif, reel: false));
     }
 
-    private function calculer(int $effectif, string $mode): array
+    private function calculer(int $entites, bool $duo, int $effectif, bool $reel): array
     {
         $maxParPoule    = (int) Reglage::valeur('simulation.max_par_poule', 20);
         $qualifies      = (int) Reglage::valeur('simulation.qualifies_par_poule', 4);
@@ -46,13 +63,13 @@ class SimulationController extends Controller
         $seuilSansPoule = (int) Reglage::valeur('simulation.seuil_sans_poules', 16);
         $seuilDuo       = (int) Reglage::valeur('simulation.seuil_duo', 25);
 
-        // Le duo divise par deux le nombre de repondants : c'est l'outil quand
-        // le groupe sature, et il fait jouer les moins forts avec les plus forts.
-        $duo       = $mode === 'duo' || ($mode === 'auto' && $effectif >= $seuilDuo);
-        $entites   = $duo ? (int) ceil($effectif / 2) : $effectif;
-        $notes     = [];
+        $notes = [];
 
-        if ($duo) {
+        if ($reel) {
+            // Format base sur les equipes reelles : pas de conseil solo/duo, la
+            // decision est deja prise et concretisee.
+            $notes[] = "Format calcule sur les {$entites} equipes deja constituees.";
+        } elseif ($duo) {
             $notes[] = "Duo conseille a partir de {$seuilDuo} inscrits : deux fois moins de reponses simultanees, et les debutants jouent avec les confirmes.";
             if ($effectif % 2 === 1) {
                 $notes[] = "Effectif impair : une equipe jouera en solo, ou un joueur fera l'arbitre.";
@@ -85,6 +102,7 @@ class SimulationController extends Controller
         return [
             'effectif'      => $effectif,
             'mode'          => $duo ? 'duo' : 'solo',
+            'reel'          => $reel,
             'concurrents'   => $entites,
             'nb_poules'     => $nbPoules,
             'par_poule'     => $parPoule,
@@ -183,5 +201,48 @@ class SimulationController extends Controller
         });
 
         return response()->json(['message' => 'Poules et manches creees.']);
+    }
+
+    /**
+     * Re-tirer les poules SANS changer le format.
+     *
+     * Meme nombre de poules, memes reglages : on re-melange seulement la
+     * repartition des equipes, en serpentin. Utile pour retirer jusqu'a un
+     * tirage qui convient. Refuse des qu'un point existe (ce serait effacer le
+     * tournoi en cours).
+     */
+    public function retirer()
+    {
+        if (\App\Models\Point::whereNull('annule_le')->exists()) {
+            return response()->json([
+                'message' => 'Des points ont deja ete attribues : re-tirer effacerait le tournoi en cours.',
+            ], 409);
+        }
+
+        $poules  = Poule::orderBy('ordre')->get();
+        $equipes = Equipe::where('active', true)->get();
+
+        if ($poules->isEmpty()) {
+            return response()->json(['message' => 'Aucune poule. Appliquez d\'abord un format.'], 422);
+        }
+        if ($equipes->isEmpty()) {
+            return response()->json(['message' => 'Aucune equipe a repartir.'], 422);
+        }
+
+        DB::transaction(function () use ($poules, $equipes) {
+            $parPoule = [];
+            $equipes->shuffle()->values()->each(function ($e, $i) use ($poules, &$parPoule) {
+                $parPoule[$poules[$i % $poules->count()]->id][] = $e->id;
+            });
+
+            foreach ($poules as $p) {
+                $ids = $parPoule[$p->id] ?? [];
+                $p->equipes()->sync($ids);                       // remplace le tirage precedent
+                Manche::where('poule_id', $p->id)->get()
+                    ->each(fn ($m) => $m->equipes()->sync($ids)); // et la manche suit
+            }
+        });
+
+        return response()->json(['message' => 'Poules re-tirees.']);
     }
 }
