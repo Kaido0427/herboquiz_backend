@@ -319,8 +319,9 @@ class ReglagesSeeder extends Seeder
             // un autre admin ne peut ni le retirer ni le modifier.
             [
                 'cle' => 'promo.actif', 'groupe' => 'promo', 'type' => 'booleen',
-                'libelle' => 'Afficher le bloc « Découvrir Gextimo »',
-                'valeur'  => '1',
+                'libelle' => 'Afficher le bloc « Réalisé par NovafriQ »',
+                'aide'    => 'Masqué par defaut : on garde la promo en arriere-plan (partage, signature) plutot qu\'un bloc visible.',
+                'valeur'  => '0',
             ],
             [
                 'cle' => 'promo.titre', 'groupe' => 'promo', 'type' => 'texte',
