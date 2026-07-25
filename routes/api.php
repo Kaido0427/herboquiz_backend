@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('reglages', [ReglageController::class, 'store']);
         Route::delete('reglages/{reglage}', [ReglageController::class, 'destroy']);
 
+        Route::post('participants/{participant}/eliminer', [ParticipantController::class, 'eliminer']);
         Route::apiResource('participants', ParticipantController::class)->except(['show']);
 
         Route::post('equipes/generer', [EquipeController::class, 'generer']);

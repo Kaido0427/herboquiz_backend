@@ -14,13 +14,19 @@ class Participant extends Model
     protected $fillable = [
         'nom', 'prenom', 'pseudo', 'telephone', 'confirme', 'note',
         'email', 'lien_facebook', 'auto_inscrit', 'inscrit_le',
+        'elimine_le', 'elimine_par',
     ];
 
     protected $appends = ['nom_complet', 'nom_affiche'];
 
     protected function casts(): array
     {
-        return ['confirme' => 'boolean', 'auto_inscrit' => 'boolean', 'inscrit_le' => 'datetime'];
+        return [
+            'confirme'     => 'boolean',
+            'auto_inscrit' => 'boolean',
+            'inscrit_le'   => 'datetime',
+            'elimine_le'   => 'datetime',
+        ];
     }
 
     protected function nomComplet(): Attribute

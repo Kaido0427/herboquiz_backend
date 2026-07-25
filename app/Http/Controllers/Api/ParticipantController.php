@@ -28,8 +28,44 @@ class ParticipantController extends Controller
         return response()->json($participant);
     }
 
-    public function destroy(Participant $participant)
+    /**
+     * Eliminer / reintegrer un joueur (bascule).
+     *
+     * Un joueur pas serieux : on l'ecarte de CETTE edition, mais il reste en
+     * base et pourra revenir. Reversible. C'est une elimination, pas une
+     * suppression. Ouvert a tous les admins.
+     */
+    public function eliminer(Request $request, Participant $participant)
     {
+        if ($participant->elimine_le) {
+            $participant->update(['elimine_le' => null, 'elimine_par' => null]);
+            $message = 'Joueur reintegre.';
+        } else {
+            $participant->update([
+                'elimine_le'  => now(),
+                'elimine_par' => $request->user()?->nom,
+            ]);
+            $message = 'Joueur elimine.';
+        }
+
+        return response()->json(['message' => $message, 'elimine' => $participant->elimine_le !== null]);
+    }
+
+    /**
+     * Supprimer definitivement un joueur de la base.
+     *
+     * Reserve au proprietaire du projet : effacer une inscription est bien plus
+     * lourd qu'une elimination (reversible). Les autres admins eliminent, ils
+     * ne suppriment pas. Verrou serveur, pas seulement un bouton masque.
+     */
+    public function destroy(Request $request, Participant $participant)
+    {
+        if ($request->user()?->nom !== config('herboquiz.proprietaire')) {
+            return response()->json([
+                'message' => 'La suppression est reservee au proprietaire. Utilisez « Eliminer ».',
+            ], 403);
+        }
+
         $participant->delete();
 
         return response()->json(['message' => 'Participant retire.']);

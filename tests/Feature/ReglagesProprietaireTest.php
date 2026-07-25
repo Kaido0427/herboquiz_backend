@@ -93,6 +93,40 @@ class ReglagesProprietaireTest extends TestCase
         $this->getJson('/api/moi')->assertOk()->assertJson(['proprietaire' => false]);
     }
 
+    public function test_eliminer_un_joueur_est_ouvert_a_tous_les_admins(): void
+    {
+        config(['herboquiz.proprietaire' => 'Kaido']);
+        $p = \App\Models\Participant::create(['nom' => 'Archer', 'confirme' => true]);
+        $this->connecterEnTant('Titus');   // pas le proprietaire
+
+        $this->postJson("/api/participants/{$p->id}/eliminer")
+            ->assertOk()->assertJson(['elimine' => true]);
+
+        $this->assertNotNull($p->fresh()->elimine_le);
+        // Reversible : il reste en base.
+        $this->assertNotNull(\App\Models\Participant::find($p->id));
+    }
+
+    public function test_supprimer_un_joueur_est_reserve_au_proprietaire(): void
+    {
+        config(['herboquiz.proprietaire' => 'Kaido']);
+        $p = \App\Models\Participant::create(['nom' => 'Spam', 'confirme' => true]);
+        $this->connecterEnTant('Titus');
+
+        $this->deleteJson("/api/participants/{$p->id}")->assertStatus(403);
+        $this->assertNotNull(\App\Models\Participant::find($p->id), 'Le joueur ne doit pas etre supprime');
+    }
+
+    public function test_le_proprietaire_peut_supprimer_un_joueur(): void
+    {
+        config(['herboquiz.proprietaire' => 'Kaido']);
+        $p = \App\Models\Participant::create(['nom' => 'Spam', 'confirme' => true]);
+        $this->connecterEnTant('Kaido');
+
+        $this->deleteJson("/api/participants/{$p->id}")->assertOk();
+        $this->assertNull(\App\Models\Participant::find($p->id));
+    }
+
     public function test_public_expose_les_poules_avec_leur_classement(): void
     {
         $a = \App\Models\Equipe::create(['nom' => 'Alpha', 'active' => true]);
