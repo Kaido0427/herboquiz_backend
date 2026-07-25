@@ -68,9 +68,10 @@ class AuthController extends Controller
             Membre::firstOrCreate(['nom' => $session->nom, 'role' => $acces->role]);
 
             return response()->json([
-                'jeton' => $session->createToken('herboquiz', [$acces->role])->plainTextToken,
-                'role'  => $acces->role,
-                'nom'   => $session->nom,
+                'jeton'        => $session->createToken('herboquiz', [$acces->role])->plainTextToken,
+                'role'         => $acces->role,
+                'nom'          => $session->nom,
+                'proprietaire' => $this->estProprietaire($session->nom),
             ]);
         }
 
@@ -81,7 +82,22 @@ class AuthController extends Controller
     {
         $s = $request->user();
 
-        return response()->json(['role' => $s->role, 'nom' => $s->nom]);
+        return response()->json([
+            'role'         => $s->role,
+            'nom'          => $s->nom,
+            'proprietaire' => $this->estProprietaire($s->nom),
+        ]);
+    }
+
+    /**
+     * Le proprietaire du projet (Kaido) : le seul autorise a toucher aux
+     * reglages reserves (signature NovafriQ, bloc promo). Le front s'en sert
+     * pour masquer ces groupes aux autres admins ; le serveur, lui, refuse
+     * leurs modifications (ReglageController). Nom declare, pas authentifie.
+     */
+    private function estProprietaire(?string $nom): bool
+    {
+        return $nom === config('herboquiz.proprietaire');
     }
 
     public function deconnexion(Request $request)

@@ -305,6 +305,48 @@ class ReglagesSeeder extends Seeder
                     . "⚡ La rapidité fait partie du jeu. L'orthographe approximative est acceptée tant que la réponse est reconnaissable.\n\n"
                     . "Reste connecté au groupe. Bonne chance à tous ! 🌿",
             ],
+
+            // ---------- Bloc promotionnel Gextimo / NovafriQ ----------
+            // Contrepartie de l'infra (domaine, sous-domaines, VPS) offerte pour
+            // le tournoi : la page publique met en avant le produit. Groupe
+            // reserve au proprietaire (config herboquiz.groupes_proprietaire) :
+            // un autre admin ne peut ni le retirer ni le modifier.
+            [
+                'cle' => 'promo.actif', 'groupe' => 'promo', 'type' => 'booleen',
+                'libelle' => 'Afficher le bloc « Découvrir Gextimo »',
+                'valeur'  => '1',
+            ],
+            [
+                'cle' => 'promo.titre', 'groupe' => 'promo', 'type' => 'texte',
+                'libelle' => 'Titre du bloc',
+                'valeur'  => 'Cette application vous plaît ?',
+            ],
+            [
+                'cle' => 'promo.texte', 'groupe' => 'promo', 'type' => 'markdown',
+                'libelle' => 'Texte du bloc',
+                'aide'    => 'Court et concret : ce que le lecteur y gagne.',
+                'valeur'  => "Elle a été conçue par **NovafriQ**. Nous créons des applications sur mesure pour votre activité — comme **Gextimo**, notre application de gestion. Envie de la vôtre ?",
+            ],
+            [
+                'cle' => 'promo.cta', 'groupe' => 'promo', 'type' => 'texte',
+                'libelle' => 'Texte du bouton principal',
+                'valeur'  => 'Découvrir Gextimo',
+            ],
+            [
+                'cle' => 'promo.lien_gextimo', 'groupe' => 'promo', 'type' => 'texte',
+                'libelle' => 'Lien du site Gextimo',
+                'valeur'  => 'https://gextimo.novafriq.africa/',
+            ],
+            [
+                'cle' => 'promo.lien_facebook', 'groupe' => 'promo', 'type' => 'texte',
+                'libelle' => 'Lien de la page Facebook Gextimo',
+                'valeur'  => 'https://www.facebook.com/profile.php?id=61590886627275',
+            ],
+            [
+                'cle' => 'promo.lien_novafriq', 'groupe' => 'promo', 'type' => 'texte',
+                'libelle' => 'Lien du site NovafriQ',
+                'valeur'  => 'https://novafriq.africa',
+            ],
         ];
     }
 }

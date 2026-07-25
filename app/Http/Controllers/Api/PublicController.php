@@ -7,7 +7,9 @@ use App\Models\Equipe;
 use App\Models\Manche;
 use App\Models\Participant;
 use App\Models\Point;
+use App\Models\Poule;
 use App\Models\Reglage;
+use App\Support\Classement;
 
 /**
  * Tout ce que la page publique affiche, sans authentification.
@@ -23,6 +25,7 @@ class PublicController extends Controller
             'reglages'   => Reglage::orderBy('ordre')->get()
                 ->mapWithKeys(fn ($r) => [$r->cle => $r->valeur_typee]),
             'classement' => $this->classementGeneral(),
+            'poules'     => $this->poules(),
             'manches'    => Manche::with('poule')->orderBy('ordre')->get()
                 ->map(fn ($m) => [
                     'id'          => $m->id,
@@ -38,6 +41,31 @@ class PublicController extends Controller
             'nb_inscrits' => Participant::where('confirme', true)->count(),
             'meilleur_marqueur' => $this->meilleurMarqueur(),
         ]);
+    }
+
+    /**
+     * Composition et classement de chaque poule.
+     *
+     * On voyait les manches a plat sans jamais savoir QUI etait dans quelle
+     * poule ni ou chacun en etait. Meme regle de classement que partout
+     * (rapidite, barrage) via le helper. On n'expose que ce qui s'affiche : ni
+     * horodatage interne, ni drapeau de barrage a trancher.
+     */
+    private function poules(): array
+    {
+        return Poule::with('equipes')->orderBy('ordre')->get()
+            ->map(fn ($poule) => [
+                'id'         => $poule->id,
+                'nom'        => $poule->nom,
+                'classement' => collect(Classement::pour($poule->equipes, $poule->manches()->pluck('id')))
+                    ->map(fn ($l) => [
+                        'libelle'   => $l['libelle'],
+                        'points'    => $l['points'],
+                        'rang'      => $l['rang'],
+                        'ex_aequo'  => $l['ex_aequo'],
+                        'departage' => $l['departage'],
+                    ])->all(),
+            ])->all();
     }
 
     /**
