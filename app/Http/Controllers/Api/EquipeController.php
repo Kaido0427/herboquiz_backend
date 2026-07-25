@@ -50,6 +50,29 @@ class EquipeController extends Controller
     }
 
     /**
+     * Eliminer ou reintegrer une equipe (bascule).
+     *
+     * Forfait, disqualification, no-show : l'equipe reste au classement mais
+     * barree, et ne peut plus se qualifier. On garde QUAND et par QUI, comme le
+     * reste du projet.
+     */
+    public function eliminer(Request $request, Equipe $equipe)
+    {
+        if ($equipe->elimine_le) {
+            $equipe->update(['elimine_le' => null, 'elimine_par' => null]);
+            $message = 'Equipe reintegree.';
+        } else {
+            $equipe->update([
+                'elimine_le'  => now(),
+                'elimine_par' => $request->user()?->nom,
+            ]);
+            $message = 'Equipe eliminee.';
+        }
+
+        return response()->json(['message' => $message, 'elimine' => $equipe->elimine_le !== null]);
+    }
+
+    /**
      * Constitue les equipes d'un coup a partir des inscrits confirmes.
      * En solo, chaque joueur devient une equipe d'une personne : c'est ce qui
      * permet de rebasculer en duo plus tard sans rien casser.

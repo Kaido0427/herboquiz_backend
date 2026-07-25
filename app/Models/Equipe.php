@@ -16,13 +16,22 @@ class Equipe extends Model
 {
     use HasUuids, SoftDeletes;
 
-    protected $fillable = ['nom', 'active'];
+    protected $fillable = ['nom', 'active', 'elimine_le', 'elimine_par'];
 
     protected $appends = ['libelle'];
 
     protected function casts(): array
     {
-        return ['active' => 'boolean'];
+        return [
+            'active'     => 'boolean',
+            'elimine_le' => 'datetime',
+        ];
+    }
+
+    /** En course : ni supprimee, ni eliminee a la main. */
+    public function estEliminee(): bool
+    {
+        return $this->elimine_le !== null;
     }
 
     public function participants()

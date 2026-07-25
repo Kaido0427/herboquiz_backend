@@ -193,7 +193,12 @@ class PhaseController extends Controller
         $out = [];
 
         foreach (Poule::orderBy('ordre')->get() as $poule) {
-            $classe = $this->classementPoule($poule);
+            // Les equipes eliminees a la main restent au classement mais ne se
+            // qualifient pas : on les retire AVANT de prendre les N meilleures.
+            $classe = array_values(array_filter(
+                $this->classementPoule($poule),
+                fn ($l) => ! $l['elimine'],
+            ));
             $out = array_merge($out, array_slice(array_column($classe, 'equipe_id'), 0, $poule->nb_qualifies));
         }
 
@@ -228,7 +233,12 @@ class PhaseController extends Controller
         $alertes = [];
 
         foreach (Poule::orderBy('ordre')->get() as $poule) {
-            $classe = $this->classementPoule($poule);
+            // Meme base que la qualification : sans les eliminees, sinon la
+            // barre tomberait au mauvais endroit.
+            $classe = array_values(array_filter(
+                $this->classementPoule($poule),
+                fn ($l) => ! $l['elimine'],
+            ));
             $n = $poule->nb_qualifies;
 
             if (count($classe) <= $n) {
@@ -263,9 +273,11 @@ class PhaseController extends Controller
             if ($duel->phase === 'petite_finale') {
                 continue;   // ne qualifie pour rien
             }
-            $classement = $duel->classement();
-            if (! empty($classement)) {
-                $out[] = $classement[0]['equipe_id'];
+            // Le vainqueur est la meilleure equipe ENCORE EN COURSE : une equipe
+            // eliminee (forfait) ne peut pas gagner son duel.
+            $actifs = array_values(array_filter($duel->classement(), fn ($l) => ! $l['elimine']));
+            if (! empty($actifs)) {
+                $out[] = $actifs[0]['equipe_id'];
             }
         }
 

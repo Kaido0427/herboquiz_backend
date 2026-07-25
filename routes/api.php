@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('participants', ParticipantController::class)->except(['show']);
 
         Route::post('equipes/generer', [EquipeController::class, 'generer']);
+        Route::post('equipes/{equipe}/eliminer', [EquipeController::class, 'eliminer']);
         Route::apiResource('equipes', EquipeController::class)->except(['show']);
 
         // Routes ecrites a la main plutot qu'apiResource : Laravel singularise

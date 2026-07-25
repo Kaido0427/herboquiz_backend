@@ -59,6 +59,8 @@ class Classement
                 'points'    => (int) ($s->total ?? 0),
                 'dernier'   => $s->dernier ?? null,
                 'departage' => (bool) ($s->a_barrage ?? false),
+                // Reste au classement (barree), mais ne peut plus se qualifier.
+                'elimine'   => $e->elimine_le !== null,
             ];
         })->values()->all();
 

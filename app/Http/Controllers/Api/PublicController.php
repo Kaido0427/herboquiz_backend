@@ -70,6 +70,7 @@ class PublicController extends Controller
                         'rang'      => $l['rang'],
                         'ex_aequo'  => $l['ex_aequo'],
                         'departage' => $l['departage'],
+                        'elimine'   => $l['elimine'],
                     ])->all(),
             ])->all();
     }
@@ -124,6 +125,7 @@ class PublicController extends Controller
             ->map(fn ($e) => [
                 'libelle' => $e->libelle,
                 'points'  => (int) ($totaux[$e->id] ?? 0),
+                'elimine' => $e->elimine_le !== null,
             ])
             ->sortByDesc('points')->values()->all();
     }
