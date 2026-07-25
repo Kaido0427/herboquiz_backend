@@ -319,18 +319,20 @@ class ReglagesSeeder extends Seeder
             [
                 'cle' => 'promo.titre', 'groupe' => 'promo', 'type' => 'texte',
                 'libelle' => 'Titre du bloc',
-                'valeur'  => 'Cette application vous plaît ?',
+                // Cadre « credit », pas « reclame » : se lit comme une signature,
+                // pas comme une pub. C'est ce qui passe sans agacer.
+                'valeur'  => 'Réalisé par NovafriQ',
             ],
             [
                 'cle' => 'promo.texte', 'groupe' => 'promo', 'type' => 'markdown',
                 'libelle' => 'Texte du bloc',
-                'aide'    => 'Court et concret : ce que le lecteur y gagne.',
-                'valeur'  => "Elle a été conçue par **NovafriQ**. Nous créons des applications sur mesure pour votre activité — comme **Gextimo**, notre application de gestion. Envie de la vôtre ?",
+                'aide'    => 'Ton sobre, informatif : une signature, pas une publicite.',
+                'valeur'  => "Nous concevons des applications sur mesure pour les groupes et les activités du quotidien — comme **Gextimo**, notre outil de gestion.",
             ],
             [
                 'cle' => 'promo.cta', 'groupe' => 'promo', 'type' => 'texte',
                 'libelle' => 'Texte du bouton principal',
-                'valeur'  => 'Découvrir Gextimo',
+                'valeur'  => 'Voir Gextimo',
             ],
             [
                 'cle' => 'promo.lien_gextimo', 'groupe' => 'promo', 'type' => 'texte',
