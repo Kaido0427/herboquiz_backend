@@ -44,8 +44,11 @@ class Classement
             ->whereNull('annule_le')
             ->groupBy('equipe_id')
             ->selectRaw('equipe_id')
-            ->selectRaw('SUM(points) AS total')
-            ->selectRaw('MAX(CASE WHEN est_departage THEN NULL ELSE created_at END) AS dernier')
+            ->selectRaw('SUM(points) AS total')                       // penalites (negatives) comprises
+            ->selectRaw('SUM(CASE WHEN est_penalite THEN points ELSE 0 END) AS penalite')
+            // Rapidite : ni les barrages, ni les penalites (leur horodatage ne
+            // dit rien de la vitesse a laquelle l'equipe a marque).
+            ->selectRaw('MAX(CASE WHEN est_departage OR est_penalite THEN NULL ELSE created_at END) AS dernier')
             ->selectRaw('MAX(CASE WHEN est_departage THEN 1 ELSE 0 END) AS a_barrage')
             ->get()
             ->keyBy('equipe_id');
@@ -57,6 +60,7 @@ class Classement
                 'equipe_id' => $e->id,
                 'libelle'   => $e->libelle,
                 'points'    => (int) ($s->total ?? 0),
+                'penalite'  => (int) ($s->penalite ?? 0),   // negatif ou 0, pour l'affichage
                 'dernier'   => $s->dernier ?? null,
                 'departage' => (bool) ($s->a_barrage ?? false),
                 // Reste au classement (barree), mais ne peut plus se qualifier.

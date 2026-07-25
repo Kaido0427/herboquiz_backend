@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Equipe;
 use App\Models\Manche;
 use App\Models\Point;
 use App\Models\Reglage;
@@ -42,6 +43,11 @@ class ScoringController extends Controller
             'equipes'  => $manche->equipes->map(fn ($e) => [
                 'id'      => $e->id,
                 'libelle' => $e->libelle,
+                // Les equipiers : pour pouvoir viser un joueur precis lors d'une
+                // penalite individuelle.
+                'membres' => $e->participants->map(fn ($p) => [
+                    'id' => $p->id, 'nom_affiche' => $p->nom_affiche,
+                ])->values(),
             ])->values(),
             'classement' => $manche->classement(),
             'dernier'    => $this->dernierPoint($manche),
@@ -215,15 +221,65 @@ class ScoringController extends Controller
         return response()->json(['classement' => $manche->classement()]);
     }
 
+    /**
+     * Infliger une penalite a une equipe : des points RETIRES du classement.
+     *
+     * Enregistree comme une ligne du journal a points negatifs (`est_penalite`),
+     * avec un motif : elle baisse le total, reste tracable (qui, quand,
+     * pourquoi) et annulable. `points` est le nombre a retirer (positif) ; on le
+     * stocke en negatif.
+     */
+    public function penaliser(Request $request, Manche $manche)
+    {
+        $data = $request->validate([
+            'equipe_id'      => ['required', 'uuid', 'exists:equipes,id'],
+            // Optionnel : la penalite vise un JOUEUR precis de l'equipe. L'effet
+            // reste sur le total de l'equipe, mais on trace l'individu.
+            'participant_id' => ['nullable', 'uuid', 'exists:participants,id'],
+            'points'         => ['required', 'integer', 'min:1', 'max:1000'],
+            'motif'          => ['nullable', 'string', 'max:200'],
+        ]);
+
+        if (! $manche->equipes()->whereKey($data['equipe_id'])->exists()) {
+            return response()->json(['message' => 'Cette equipe ne participe pas a cette manche.'], 422);
+        }
+
+        // Si un joueur est vise, il doit appartenir a l'equipe penalisee.
+        if (! empty($data['participant_id'])
+            && ! Equipe::whereKey($data['equipe_id'])
+                ->whereHas('participants', fn ($q) => $q->whereKey($data['participant_id']))->exists()) {
+            return response()->json(['message' => 'Ce joueur ne fait pas partie de cette equipe.'], 422);
+        }
+
+        $session = $request->user();
+
+        Point::create([
+            'manche_id'      => $manche->id,
+            'equipe_id'      => $data['equipe_id'],
+            'participant_id' => $data['participant_id'] ?? null,
+            'points'         => -abs($data['points']),   // toujours negatif
+            'est_penalite'   => true,
+            'motif'          => $data['motif'] ?? null,
+            'attribue_par'   => $session->nom,
+            'role_auteur'    => $session->role,
+        ]);
+
+        $session->update(['derniere_activite' => now()]);
+        $manche->refresh()->load('equipes.participants');
+
+        return response()->json(['classement' => $manche->classement()]);
+    }
+
     private function dernierPoint(Manche $manche, bool $brut = false)
     {
         // Depart sur created_at seul : deux points attribues dans la meme
         // seconde rendaient le choix ambigu, et on annulait parfois le mauvais.
-        // On ignore les barrages : « annuler le dernier point » ne doit retirer
-        // qu'un vrai point marque, jamais un departage (qui se retire depuis son
-        // propre outil).
+        // On ignore les barrages ET les penalites : « annuler le dernier point »
+        // ne retire qu'un vrai point marque ; barrage et penalite se retirent
+        // depuis leur propre outil.
         $p = $manche->points()->whereNull('annule_le')
             ->where('est_departage', false)
+            ->where('est_penalite', false)
             ->orderByDesc('created_at')->orderByDesc('id')->first();
 
         if (! $p || $brut) {

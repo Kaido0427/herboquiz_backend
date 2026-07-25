@@ -30,7 +30,9 @@ class PreparationController extends Controller
         $manchesPoule = Manche::where('type', 'poule')->count();
 
         $dansEquipe = $equipes->flatMap(fn ($e) => $e->participants->pluck('id'))->unique();
-        $orphelins = $confirmes->reject(fn ($p) => $dansEquipe->contains($p->id));
+        // Un joueur elimine est ecarte VOLONTAIREMENT : ce n'est pas un oubli,
+        // on ne le signale donc pas comme « sans equipe, ne jouera pas ».
+        $orphelins = $confirmes->reject(fn ($p) => $dansEquipe->contains($p->id) || $p->elimine_le);
 
         $enPoule = $poules->flatMap(fn ($p) => $p->equipes->pluck('id'))->unique();
         $equipesHorsPoule = $equipes->reject(fn ($e) => $enPoule->contains($e->id));

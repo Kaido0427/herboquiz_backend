@@ -168,6 +168,27 @@ class ClassementBarrageTest extends TestCase
         $this->assertSame(0, $pointBetaActif, 'Le vrai point de Beta doit avoir ete annule');
     }
 
+    public function test_une_penalite_retire_des_points_au_classement(): void
+    {
+        $a = $this->equipe('Alpha');
+        $b = $this->equipe('Beta');
+        $m = $this->manche([$a, $b]);
+        $this->point($m, $a, 30, '2026-07-27 18:00:01');
+        $this->point($m, $b, 10, '2026-07-27 18:00:02');
+
+        $this->connecter();
+        $this->postJson("/api/manches/{$m->id}/penalite", [
+            'equipe_id' => $a->id, 'points' => 15, 'motif' => 'retard',
+        ])->assertOk();
+
+        $classe = collect($m->fresh()->load('equipes')->classement())->keyBy('equipe_id');
+
+        $this->assertSame(15, $classe[$a->id]['points']);      // 30 - 15
+        $this->assertSame(-15, $classe[$a->id]['penalite']);   // affiche
+        $this->assertSame(10, $classe[$b->id]['points']);
+        $this->assertSame(0, $classe[$b->id]['penalite']);
+    }
+
     public function test_le_barrage_ne_gonfle_pas_le_meilleur_marqueur(): void
     {
         $a = $this->equipe('Alpha');

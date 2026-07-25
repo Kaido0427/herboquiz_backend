@@ -51,6 +51,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('manches/{manche}/rouvrir', [ScoringController::class, 'rouvrir']);
     // Trancher une egalite parfaite : l'animateur qui tient la manche en a le droit.
     Route::post('manches/{manche}/barrage', [ScoringController::class, 'barrage']);
+    // Penalite : retirer des points a une equipe (motif tracable).
+    Route::post('manches/{manche}/penalite', [ScoringController::class, 'penaliser']);
     Route::get('manches', [MancheController::class, 'index']);
     Route::get('manches/{manche}', [MancheController::class, 'show']);
     // Preparer les questions fait partie du travail de l'animateur : c'est lui

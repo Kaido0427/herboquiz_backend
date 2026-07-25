@@ -71,6 +71,7 @@ class PublicController extends Controller
                         'ex_aequo'  => $l['ex_aequo'],
                         'departage' => $l['departage'],
                         'elimine'   => $l['elimine'],
+                        'penalite'  => $l['penalite'],
                     ])->all(),
             ])->all();
     }
@@ -97,6 +98,7 @@ class PublicController extends Controller
 
         $totaux = Point::whereIn('manche_id', $manchesPoule)
             ->whereNull('annule_le')
+            ->where('est_penalite', false)   // le marqueur, c'est ce qu'on MARQUE : sans les penalites
             ->selectRaw('equipe_id, SUM(points) AS total')
             ->groupBy('equipe_id')
             ->orderByDesc('total')
@@ -121,11 +123,17 @@ class PublicController extends Controller
             ->groupBy('equipe_id')
             ->pluck('total', 'equipe_id');
 
+        $penalites = Point::whereNull('annule_le')->where('est_penalite', true)
+            ->selectRaw('equipe_id, SUM(points) AS p')
+            ->groupBy('equipe_id')
+            ->pluck('p', 'equipe_id');
+
         return Equipe::with('participants')->get()
             ->map(fn ($e) => [
-                'libelle' => $e->libelle,
-                'points'  => (int) ($totaux[$e->id] ?? 0),
-                'elimine' => $e->elimine_le !== null,
+                'libelle'  => $e->libelle,
+                'points'   => (int) ($totaux[$e->id] ?? 0),
+                'penalite' => (int) ($penalites[$e->id] ?? 0),
+                'elimine'  => $e->elimine_le !== null,
             ])
             ->sortByDesc('points')->values()->all();
     }

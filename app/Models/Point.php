@@ -14,8 +14,8 @@ class Point extends Model
     use HasUuids;
 
     protected $fillable = [
-        'manche_id', 'question_id', 'equipe_id', 'points', 'est_departage',
-        'attribue_par', 'role_auteur', 'annule_le', 'annule_par',
+        'manche_id', 'question_id', 'equipe_id', 'participant_id', 'points', 'est_departage',
+        'est_penalite', 'motif', 'attribue_par', 'role_auteur', 'annule_le', 'annule_par',
     ];
 
     protected function casts(): array
@@ -23,6 +23,7 @@ class Point extends Model
         return [
             'annule_le'     => 'datetime',
             'est_departage' => 'boolean',
+            'est_penalite'  => 'boolean',
         ];
     }
 
