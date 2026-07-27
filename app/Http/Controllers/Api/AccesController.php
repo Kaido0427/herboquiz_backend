@@ -26,6 +26,10 @@ class AccesController extends Controller
      */
     public function regenerer(Request $request, Acces $acces)
     {
+        if ($refus = $this->proprietaireUniquement($request)) {
+            return $refus;
+        }
+
         $code = Acces::genererCode();
 
         DB::transaction(function () use ($acces, $code) {
@@ -46,6 +50,10 @@ class AccesController extends Controller
 
     public function definir(Request $request, Acces $acces)
     {
+        if ($refus = $this->proprietaireUniquement($request)) {
+            return $refus;
+        }
+
         $data = $request->validate([
             'code' => ['required', 'string', 'min:4', 'max:32'],
         ]);
@@ -60,5 +68,26 @@ class AccesController extends Controller
     public function sessions()
     {
         return SessionAcces::orderByDesc('derniere_activite')->limit(100)->get();
+    }
+
+    /**
+     * Changer un code d'acces (regenerer / definir) est reserve au proprietaire.
+     *
+     * Regenerer supprime TOUS les jetons du role : l'admin qui clique recupere
+     * bien le nouveau code, mais tous les autres sont ejectes sans le recevoir.
+     * Un admin de bonne foi a ainsi verrouille l'equipe entiere a la veille d'un
+     * tournoi. Le reste de l'administration reste ouvert a tous les admins ;
+     * seule la maitrise des codes revient a Kaido. Nom declare, pas authentifie
+     * — cote codes c'est suffisant : sans le code on n'est pas admin du tout.
+     */
+    private function proprietaireUniquement(Request $request)
+    {
+        if ($request->user()?->nom !== config('herboquiz.proprietaire')) {
+            return response()->json([
+                'message' => "Seul le proprietaire peut changer les codes d'acces.",
+            ], 403);
+        }
+
+        return null;
     }
 }

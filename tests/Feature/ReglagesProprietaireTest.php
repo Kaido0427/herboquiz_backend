@@ -22,6 +22,16 @@ class ReglagesProprietaireTest extends TestCase
         $this->withHeader('Authorization', 'Bearer ' . $s->createToken('t')->plainTextToken);
     }
 
+    private function accesAdmin(string $code = 'ABCD1234'): \App\Models\Acces
+    {
+        // code_hash est NOT NULL : passer par definirCode (hash + clair) plutot
+        // que create() avec le seul code_clair.
+        $a = new \App\Models\Acces(['role' => 'admin']);
+        $a->definirCode($code);
+
+        return $a;
+    }
+
     private function signature(): void
     {
         Reglage::create([
@@ -125,6 +135,39 @@ class ReglagesProprietaireTest extends TestCase
 
         $this->deleteJson("/api/participants/{$p->id}")->assertOk();
         $this->assertNull(\App\Models\Participant::find($p->id));
+    }
+
+    // Regenerer un code supprime tous les jetons du role et ejecte l'equipe :
+    // un admin non proprietaire ne doit pas pouvoir le declencher (incident du
+    // 26/07 : un admin a verrouille tout le monde a la veille du tournoi).
+    public function test_regenerer_un_code_est_refuse_a_un_autre_admin(): void
+    {
+        config(['herboquiz.proprietaire' => 'Kaido']);
+        $acces = $this->accesAdmin();
+        $this->connecterEnTant('Titus');
+
+        $this->postJson("/api/acces/{$acces->id}/regenerer")->assertStatus(403);
+        $this->assertSame('ABCD1234', $acces->fresh()->code_clair, 'Le code ne doit pas avoir change');
+    }
+
+    public function test_definir_un_code_est_refuse_a_un_autre_admin(): void
+    {
+        config(['herboquiz.proprietaire' => 'Kaido']);
+        $acces = $this->accesAdmin();
+        $this->connecterEnTant('Titus');
+
+        $this->putJson("/api/acces/{$acces->id}", ['code' => 'HACK9999'])->assertStatus(403);
+        $this->assertSame('ABCD1234', $acces->fresh()->code_clair);
+    }
+
+    public function test_le_proprietaire_peut_regenerer_un_code(): void
+    {
+        config(['herboquiz.proprietaire' => 'Kaido']);
+        $acces = $this->accesAdmin();
+        $this->connecterEnTant('Kaido');
+
+        $this->postJson("/api/acces/{$acces->id}/regenerer")->assertOk();
+        $this->assertNotSame('ABCD1234', $acces->fresh()->code_clair);
     }
 
     public function test_public_expose_les_poules_avec_leur_classement(): void
